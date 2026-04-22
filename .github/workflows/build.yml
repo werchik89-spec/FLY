@@ -1,0 +1,38 @@
+name: Build
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "6.0.x"
+
+      - name: Fetch MelonLoader reference DLLs
+        run: |
+          set -e
+          mkdir -p lib
+          curl -sL -o /tmp/ml.zip \
+            https://github.com/LavaGang/MelonLoader/releases/download/v0.6.6/MelonLoader.x64.zip
+          unzip -q /tmp/ml.zip -d /tmp/ml
+          cp /tmp/ml/MelonLoader/net6/MelonLoader.dll lib/
+          cp /tmp/ml/MelonLoader/net6/0Harmony.dll lib/
+          cp /tmp/ml/MelonLoader/net6/Il2CppInterop.Runtime.dll lib/
+          ls -la lib
+
+      - name: Build
+        run: dotnet build src/SchoolboyRunawayCheats.csproj -c Release -nologo
+
+      - name: Upload mod DLL
+        uses: actions/upload-artifact@v4
+        with:
+          name: SchoolboyRunawayCheats
+          path: src/bin/Release/SchoolboyRunawayCheats.dll
