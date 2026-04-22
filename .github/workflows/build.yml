@@ -7,7 +7,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  mod:
+    name: Build cheat DLL
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -17,16 +18,7 @@ jobs:
           dotnet-version: "6.0.x"
 
       - name: Fetch MelonLoader reference DLLs
-        run: |
-          set -e
-          mkdir -p lib
-          curl -sL -o /tmp/ml.zip \
-            https://github.com/LavaGang/MelonLoader/releases/download/v0.6.6/MelonLoader.x64.zip
-          unzip -q /tmp/ml.zip -d /tmp/ml
-          cp /tmp/ml/MelonLoader/net6/MelonLoader.dll lib/
-          cp /tmp/ml/MelonLoader/net6/0Harmony.dll lib/
-          cp /tmp/ml/MelonLoader/net6/Il2CppInterop.Runtime.dll lib/
-          ls -la lib
+        run: bash scripts/fetch-refs.sh
 
       - name: Build
         run: dotnet build src/SchoolboyRunawayCheats.csproj -c Release -nologo
@@ -36,3 +28,41 @@ jobs:
         with:
           name: SchoolboyRunawayCheats
           path: src/bin/Release/SchoolboyRunawayCheats.dll
+
+  trainer:
+    name: Build trainer exe
+    runs-on: windows-latest
+    needs: mod
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "6.0.x"
+
+      - name: Download cheat DLL artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: SchoolboyRunawayCheats
+          path: trainer-assets
+
+      - name: Publish trainer (single-file self-contained win-x64)
+        shell: pwsh
+        run: |
+          dotnet publish trainer/SchoolboyRunawayTrainer.csproj -c Release -r win-x64 --self-contained true `
+            /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true `
+            -o publish
+
+      - name: Bundle cheat DLL next to exe
+        shell: pwsh
+        run: |
+          Copy-Item trainer-assets\SchoolboyRunawayCheats.dll publish\ -Force
+          Get-ChildItem publish | Format-Table Name, Length
+
+      - name: Upload trainer bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: SchoolboyRunawayTrainer-win-x64
+          path: |
+            publish/SchoolboyRunawayTrainer.exe
+            publish/SchoolboyRunawayCheats.dll
