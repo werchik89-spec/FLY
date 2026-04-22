@@ -1,3 +1,17 @@
+# Build output
 bin/
 obj/
+*.user
+*.suo
+
+# Local reference DLLs (downloaded by build)
 lib/*.dll
+
+# IDE
+.vs/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
