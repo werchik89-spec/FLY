@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import logoImg from '../assets/logo.png';
 
 interface AuthScreenProps {
   onLogin: (username: string, password: string) => Promise<void>;
@@ -33,10 +34,7 @@ export default function AuthScreen({ onLogin, onRegister }: AuthScreenProps) {
     <div className="auth-screen">
       <div className="auth-container">
         <div className="auth-logo">
-          <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
-            <rect width="72" height="72" rx="18" fill="#fff"/>
-            <path d="M20 36L32 48L52 24" stroke="#0a0a0a" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
+          <img src={logoImg} alt="ZenvorMs" />
           <h1>ZenvorMs</h1>
           <p>{isLogin ? 'Войдите в аккаунт' : 'Создайте аккаунт'}</p>
         </div>

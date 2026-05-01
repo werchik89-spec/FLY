@@ -195,11 +195,16 @@ export function useStore() {
   }, []);
 
   const login = useCallback(async (username: string, password: string) => {
-    const res = await fetch(`${SERVER_URL}/api/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password }),
-    });
+    let res;
+    try {
+      res = await fetch(`${SERVER_URL}/api/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+    } catch {
+      throw new Error('Сервер недоступен. Запустите: npm run dev:server');
+    }
     const data = await res.json();
     if (!res.ok) throw new Error(data.error);
     setCurrentUser(data.user);
@@ -209,11 +214,16 @@ export function useStore() {
   }, [connectSocket]);
 
   const register = useCallback(async (username: string, password: string, displayName: string) => {
-    const res = await fetch(`${SERVER_URL}/api/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password, displayName }),
-    });
+    let res;
+    try {
+      res = await fetch(`${SERVER_URL}/api/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password, displayName }),
+      });
+    } catch {
+      throw new Error('Сервер недоступен. Запустите: npm run dev:server');
+    }
     const data = await res.json();
     if (!res.ok) throw new Error(data.error);
     setCurrentUser(data.user);

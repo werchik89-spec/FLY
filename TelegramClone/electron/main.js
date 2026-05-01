@@ -1,7 +1,30 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
+const { fork } = require('child_process');
 
 let mainWindow = null;
+let serverProcess = null;
+
+function startServer() {
+  const serverPath = path.join(__dirname, '..', 'server', 'index.js');
+  try {
+    serverProcess = fork(serverPath, [], {
+      env: { ...process.env, PORT: '3001' },
+      silent: true,
+    });
+    serverProcess.stdout?.on('data', (data) => {
+      console.log(`Server: ${data}`);
+    });
+    serverProcess.stderr?.on('data', (data) => {
+      console.error(`Server error: ${data}`);
+    });
+    serverProcess.on('error', (err) => {
+      console.error('Server process error:', err);
+    });
+  } catch (err) {
+    console.error('Failed to start server:', err);
+  }
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -27,12 +50,22 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
-  createWindow();
+  startServer();
+  setTimeout(() => {
+    createWindow();
+  }, 1000);
 });
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
+  }
+});
+
+app.on('before-quit', () => {
+  if (serverProcess) {
+    serverProcess.kill();
+    serverProcess = null;
   }
 });
 
