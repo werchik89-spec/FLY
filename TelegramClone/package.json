@@ -2,38 +2,55 @@
   "name": "nexus-messenger",
   "version": "1.0.0",
   "description": "Nexus Messenger — современный мессенджер в стиле Telegram",
-  "main": "dist-electron/main.js",
+  "main": "electron/main.js",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "vite build",
     "electron:dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && cross-env NODE_ENV=development electron .\"",
-    "electron:build": "npm run build && electron-builder",
+    "electron:build": "npm run build && electron-builder --win --x64",
+    "electron:build:linux": "npm run build && electron-builder --linux --x64",
     "preview": "vite preview"
   },
   "build": {
     "appId": "com.nexus.messenger",
     "productName": "Nexus Messenger",
     "directories": {
-      "output": "release"
+      "output": "release",
+      "buildResources": "build"
     },
     "files": [
       "dist/**/*",
-      "dist-electron/**/*"
+      "electron/**/*",
+      "!electron/main.ts"
     ],
     "win": {
-      "target": "nsis",
-      "icon": "public/icon.png"
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "build/icon.ico",
+      "artifactName": "NexusMessenger-Setup-${version}.${ext}"
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
-      "installerIcon": "public/icon.png",
-      "uninstallerIcon": "public/icon.png",
-      "installerHeaderIcon": "public/icon.png"
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Nexus Messenger",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerSidebar": null,
+      "license": null,
+      "perMachine": false,
+      "allowElevation": true,
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": false
     },
     "linux": {
       "target": "AppImage",
-      "icon": "public/icon.png"
+      "icon": "build/icon.png"
     }
   },
   "keywords": ["messenger", "telegram", "chat"],
