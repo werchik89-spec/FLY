@@ -36,12 +36,27 @@ class VPNEngine {
     }
 
     /**
-     * Find OpenVPN executable on the system
+     * Find OpenVPN executable — first checks bundled binary, then system installs
      */
     _findOpenVPN() {
         if (this.openvpnPath) return this.openvpnPath;
 
-        const possiblePaths = process.platform === 'win32'
+        // 1. Check bundled OpenVPN binary (shipped with the app)
+        const bundledPaths = [
+            path.join(__dirname, 'bin', 'openvpn.exe'),
+            path.join(process.resourcesPath || '', 'app.asar.unpacked', 'vpn', 'bin', 'openvpn.exe'),
+            path.join(process.resourcesPath || '', 'app', 'vpn', 'bin', 'openvpn.exe'),
+        ];
+
+        for (const p of bundledPaths) {
+            if (fs.existsSync(p)) {
+                this.openvpnPath = p;
+                return p;
+            }
+        }
+
+        // 2. Check system-installed OpenVPN
+        const systemPaths = process.platform === 'win32'
             ? [
                 'C:\\Program Files\\OpenVPN\\bin\\openvpn.exe',
                 'C:\\Program Files (x86)\\OpenVPN\\bin\\openvpn.exe',
@@ -49,14 +64,14 @@ class VPNEngine {
             ]
             : ['/usr/sbin/openvpn', '/usr/bin/openvpn', '/usr/local/bin/openvpn'];
 
-        for (const p of possiblePaths) {
+        for (const p of systemPaths) {
             if (fs.existsSync(p)) {
                 this.openvpnPath = p;
                 return p;
             }
         }
 
-        // Try PATH
+        // 3. Try PATH
         try {
             const cmd = process.platform === 'win32' ? 'where openvpn' : 'which openvpn';
             const result = execSync(cmd, { encoding: 'utf8', timeout: 5000 }).trim();

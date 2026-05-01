@@ -25,6 +25,9 @@
       "assets/**/*",
       "node_modules/**/*"
     ],
+    "asarUnpack": [
+      "vpn/bin/**/*"
+    ],
     "win": {
       "target": [
         {
