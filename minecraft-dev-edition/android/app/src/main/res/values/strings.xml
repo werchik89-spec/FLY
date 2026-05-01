@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Minecraft Dev Edition</string>
+    <string name="title_activity_main">Minecraft Dev Edition</string>
+    <string name="package_name">com.devedition.minecraft</string>
+    <string name="custom_url_scheme">com.devedition.minecraft</string>
+</resources>
