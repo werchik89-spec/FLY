@@ -50,6 +50,7 @@ export default function App() {
         onSendFriendRequest={store.sendFriendRequest}
         onShowSettings={() => setView(view === 'settings' ? 'chat' : 'settings')}
         onShowProfile={() => setView(view === 'profile' ? 'chat' : 'profile')}
+        onCreateGroup={store.createGroup}
       />
 
       {view === 'settings' ? (
@@ -88,6 +89,15 @@ export default function App() {
                 <div>
                   <label>О себе</label>
                   <textarea placeholder="Напишите о себе..." defaultValue={store.currentUser.bio} readOnly />
+                </div>
+                <div className="settings-section">
+                  <label>Уведомления</label>
+                  <button
+                    className={`toggle-btn ${store.notifications ? 'active' : ''}`}
+                    onClick={store.toggleNotifications}
+                  >
+                    {store.notifications ? 'Включены' : 'Выключены'}
+                  </button>
                 </div>
                 <button className="btn-logout" onClick={store.logout}>
                   Выйти из аккаунта
@@ -149,13 +159,21 @@ export default function App() {
             currentUser={store.currentUser}
             isOnline={activeChat ? store.onlineUsers.has(activeChat.friend.id) : false}
             isTyping={activeChat ? (store.typingUsers.get(activeChat.id) || false) : false}
+            pinnedMessage={activeChat ? store.pinnedMessages.get(activeChat.id) : undefined}
+            chats={store.chats}
             onSendMessage={store.sendMessage}
             onEditMessage={store.editMessage}
             onDeleteMessage={store.deleteMessage}
+            onPinMessage={store.pinMessage}
+            onUnpinMessage={store.unpinMessage}
+            onForwardMessage={store.forwardMessage}
+            onSearchMessages={store.searchMessages}
+            searchResults={store.searchResults}
             onMarkAsRead={store.markAsRead}
             onStartTyping={store.startTyping}
             onCall={store.initiateCall}
             onShowProfile={() => setRightPanel(rightPanel === 'profile' ? 'none' : 'profile')}
+            onUploadFile={store.uploadFile}
           />
 
           {rightPanel === 'profile' && activeChat && (
@@ -170,19 +188,39 @@ export default function App() {
               </div>
               <div className="profile-header">
                 <div className="profile-avatar">
-                  {activeChat.friend.avatar ? (
+                  {activeChat.isGroup ? (
+                    <span style={{ fontSize: 28 }}>{(activeChat.groupName || 'G')[0]}</span>
+                  ) : activeChat.friend.avatar ? (
                     <img src={activeChat.friend.avatar} alt="" />
                   ) : (
                     getInitials(activeChat.friend.displayName)
                   )}
                 </div>
-                <div className="profile-name">{activeChat.friend.displayName}</div>
-                <div className="profile-username">@{activeChat.friend.username}</div>
-                <div className={`profile-status ${store.onlineUsers.has(activeChat.friend.id) ? 'online' : ''}`}>
-                  {store.onlineUsers.has(activeChat.friend.id) ? 'В сети' : 'Не в сети'}
+                <div className="profile-name">
+                  {activeChat.isGroup ? activeChat.groupName : activeChat.friend.displayName}
+                </div>
+                {!activeChat.isGroup && (
+                  <div className="profile-username">@{activeChat.friend.username}</div>
+                )}
+                <div className={`profile-status ${!activeChat.isGroup && store.onlineUsers.has(activeChat.friend.id) ? 'online' : ''}`}>
+                  {activeChat.isGroup
+                    ? `${activeChat.groupMembers?.length || 0} участников`
+                    : store.onlineUsers.has(activeChat.friend.id) ? 'В сети' : 'Не в сети'}
                 </div>
               </div>
-              {activeChat.friend.bio && (
+              {activeChat.isGroup && activeChat.groupMembers && (
+                <div className="profile-section">
+                  <div className="profile-section-title">Участники</div>
+                  {activeChat.groupMembers.map(m => (
+                    <div key={m.id} className="group-member-item">
+                      <div className="member-avatar">{getInitials(m.displayName)}</div>
+                      <span>{m.displayName}</span>
+                      {store.onlineUsers.has(m.id) && <span className="member-online" />}
+                    </div>
+                  ))}
+                </div>
+              )}
+              {!activeChat.isGroup && activeChat.friend.bio && (
                 <div className="profile-section">
                   <div className="profile-section-title">О себе</div>
                   <div className="profile-bio">{activeChat.friend.bio}</div>
@@ -199,6 +237,7 @@ export default function App() {
         onAccept={store.acceptCall}
         onReject={store.rejectCall}
         onEnd={store.endCall}
+        onToggleScreenShare={store.toggleScreenShare}
       />
     </div>
   );

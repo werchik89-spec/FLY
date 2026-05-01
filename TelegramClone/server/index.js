@@ -3,14 +3,21 @@ const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+
+const UPLOADS_DIR = path.join(__dirname, 'uploads');
+if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+app.use('/uploads', express.static(UPLOADS_DIR));
 
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { origin: '*', methods: ['GET', 'POST'] }
+  cors: { origin: '*', methods: ['GET', 'POST'] },
+  maxHttpBufferSize: 50e6,
 });
 
 // In-memory storage
@@ -19,6 +26,8 @@ const messages = new Map();
 const friendRequests = new Map();
 const friends = new Map();
 const onlineUsers = new Map();
+const groups = new Map();
+const pinnedMessages = new Map();
 
 function generateId() {
   return crypto.randomUUID();
@@ -26,6 +35,18 @@ function generateId() {
 
 function hashPassword(password) {
   return crypto.createHash('sha256').update(password).digest('hex');
+}
+
+function emitToChat(chatId, event, data) {
+  const group = groups.get(chatId);
+  if (group) {
+    group.members.forEach(memberId => {
+      io.to(`user:${memberId}`).emit(event, data);
+    });
+  } else {
+    const [id1, id2] = chatId.split(':');
+    io.to(`user:${id1}`).to(`user:${id2}`).emit(event, data);
+  }
 }
 
 // REST API
@@ -82,6 +103,28 @@ app.get('/api/users/search', (req, res) => {
       isFriend: (friends.get(userId) || []).includes(u.id),
     }));
   res.json(results);
+});
+
+// File upload endpoint
+app.post('/api/upload', (req, res) => {
+  const { fileName, fileData, fileType } = req.body;
+  if (!fileName || !fileData) {
+    return res.status(400).json({ error: 'Missing file data' });
+  }
+  const fileId = generateId();
+  const ext = path.extname(fileName) || '';
+  const savedName = fileId + ext;
+  const buffer = Buffer.from(fileData, 'base64');
+  fs.writeFileSync(path.join(UPLOADS_DIR, savedName), buffer);
+
+  const fileUrl = `/uploads/${savedName}`;
+  res.json({
+    id: fileId,
+    name: fileName,
+    type: fileType || 'application/octet-stream',
+    size: buffer.length,
+    url: fileUrl,
+  });
 });
 
 // Socket.IO
@@ -160,27 +203,31 @@ io.on('connection', (socket) => {
     callback(enriched);
   });
 
-  socket.on('message:send', ({ chatId, senderId, text, replyTo }) => {
+  // Messages with file/voice support
+  socket.on('message:send', ({ chatId, senderId, text, replyTo, file, voice, forwardedFrom }) => {
     const msg = {
       id: generateId(),
       chatId,
       senderId,
-      text,
+      text: text || '',
       replyTo: replyTo || null,
+      forwardedFrom: forwardedFrom || null,
       timestamp: new Date().toISOString(),
       status: 'sent',
       edited: false,
+      pinned: false,
+      file: file || null,
+      voice: voice || null,
     };
     const chatMessages = messages.get(chatId) || [];
     chatMessages.push(msg);
     messages.set(chatId, chatMessages);
 
-    const [id1, id2] = chatId.split(':');
-    io.to(`user:${id1}`).to(`user:${id2}`).emit('message:received', msg);
+    emitToChat(chatId, 'message:received', msg);
 
     setTimeout(() => {
       msg.status = 'delivered';
-      io.to(`user:${id1}`).to(`user:${id2}`).emit('message:status', { messageId: msg.id, chatId, status: 'delivered' });
+      emitToChat(chatId, 'message:status', { messageId: msg.id, chatId, status: 'delivered' });
     }, 500);
   });
 
@@ -191,8 +238,7 @@ io.on('connection', (socket) => {
         m.status = 'read';
       }
     });
-    const [id1, id2] = chatId.split(':');
-    io.to(`user:${id1}`).to(`user:${id2}`).emit('message:all-read', { chatId, readBy: userId });
+    emitToChat(chatId, 'message:all-read', { chatId, readBy: userId });
   });
 
   socket.on('message:edit', ({ messageId, chatId, newText }) => {
@@ -201,8 +247,7 @@ io.on('connection', (socket) => {
     if (msg) {
       msg.text = newText;
       msg.edited = true;
-      const [id1, id2] = chatId.split(':');
-      io.to(`user:${id1}`).to(`user:${id2}`).emit('message:edited', { messageId, chatId, newText });
+      emitToChat(chatId, 'message:edited', { messageId, chatId, newText });
     }
   });
 
@@ -210,14 +255,118 @@ io.on('connection', (socket) => {
     const chatMessages = messages.get(chatId) || [];
     const idx = chatMessages.findIndex(m => m.id === messageId);
     if (idx >= 0) chatMessages.splice(idx, 1);
-    const [id1, id2] = chatId.split(':');
-    io.to(`user:${id1}`).to(`user:${id2}`).emit('message:deleted', { messageId, chatId });
+    emitToChat(chatId, 'message:deleted', { messageId, chatId });
+  });
+
+  socket.on('message:pin', ({ messageId, chatId }) => {
+    const chatMessages = messages.get(chatId) || [];
+    const msg = chatMessages.find(m => m.id === messageId);
+    if (msg) {
+      chatMessages.forEach(m => m.pinned = false);
+      msg.pinned = true;
+      pinnedMessages.set(chatId, msg);
+      emitToChat(chatId, 'message:pinned', { chatId, message: msg });
+    }
+  });
+
+  socket.on('message:unpin', ({ chatId }) => {
+    const chatMessages = messages.get(chatId) || [];
+    chatMessages.forEach(m => m.pinned = false);
+    pinnedMessages.delete(chatId);
+    emitToChat(chatId, 'message:unpinned', { chatId });
+  });
+
+  socket.on('message:forward', ({ fromChatId, messageId, toChatId, senderId }) => {
+    const fromMessages = messages.get(fromChatId) || [];
+    const originalMsg = fromMessages.find(m => m.id === messageId);
+    if (originalMsg) {
+      const senderUser = users.get(originalMsg.senderId);
+      const forwardedFrom = senderUser ? senderUser.displayName : 'Unknown';
+      const newMsg = {
+        id: generateId(),
+        chatId: toChatId,
+        senderId,
+        text: originalMsg.text,
+        replyTo: null,
+        forwardedFrom,
+        timestamp: new Date().toISOString(),
+        status: 'sent',
+        edited: false,
+        pinned: false,
+        file: originalMsg.file || null,
+        voice: originalMsg.voice || null,
+      };
+      const chatMessages = messages.get(toChatId) || [];
+      chatMessages.push(newMsg);
+      messages.set(toChatId, chatMessages);
+      emitToChat(toChatId, 'message:received', newMsg);
+    }
+  });
+
+  socket.on('message:search', ({ chatId, query }, callback) => {
+    const chatMessages = messages.get(chatId) || [];
+    const results = chatMessages.filter(m =>
+      m.text.toLowerCase().includes(query.toLowerCase())
+    );
+    callback(results);
   });
 
   socket.on('message:history', ({ chatId }, callback) => {
-    callback(messages.get(chatId) || []);
+    const chatMessages = messages.get(chatId) || [];
+    const pinned = pinnedMessages.get(chatId) || null;
+    callback({ messages: chatMessages, pinnedMessage: pinned });
   });
 
+  // Group chats
+  socket.on('group:create', ({ name, creatorId, memberIds }) => {
+    const groupId = `group:${generateId()}`;
+    const allMembers = [creatorId, ...memberIds];
+    const group = {
+      id: groupId,
+      name,
+      creatorId,
+      members: allMembers,
+      createdAt: new Date().toISOString(),
+    };
+    groups.set(groupId, group);
+
+    const memberUsers = allMembers.map(id => {
+      const u = users.get(id);
+      if (!u) return null;
+      const { password, ...safeUser } = u;
+      return { ...safeUser, isOnline: onlineUsers.has(id) };
+    }).filter(Boolean);
+
+    allMembers.forEach(memberId => {
+      io.to(`user:${memberId}`).emit('group:created', {
+        chatId: groupId,
+        groupName: name,
+        members: memberUsers,
+        isGroup: true,
+      });
+    });
+  });
+
+  socket.on('group:list', (userId, callback) => {
+    const userGroups = [...groups.values()].filter(g => g.members.includes(userId));
+    const result = userGroups.map(g => {
+      const memberUsers = g.members.map(id => {
+        const u = users.get(id);
+        if (!u) return null;
+        const { password, ...safeUser } = u;
+        return { ...safeUser, isOnline: onlineUsers.has(id) };
+      }).filter(Boolean);
+      return {
+        chatId: g.id,
+        groupName: g.name,
+        members: memberUsers,
+        isGroup: true,
+      };
+    });
+    callback(result);
+  });
+
+  // Calls
   socket.on('call:initiate', ({ callerId, receiverId, callType }) => {
     const caller = users.get(callerId);
     if (caller) {
@@ -242,16 +391,39 @@ io.on('connection', (socket) => {
     io.to(`user:${otherUserId}`).emit('call:ended', { callId });
   });
 
+  socket.on('call:screen-share', ({ callId, userId, otherUserId, sharing }) => {
+    io.to(`user:${otherUserId}`).emit('call:screen-sharing', { callId, userId, sharing });
+  });
+
+  // Typing
   socket.on('typing:start', ({ chatId, userId }) => {
-    const [id1, id2] = chatId.split(':');
-    const otherId = id1 === userId ? id2 : id1;
-    io.to(`user:${otherId}`).emit('typing:started', { chatId, userId });
+    const group = groups.get(chatId);
+    if (group) {
+      group.members.forEach(memberId => {
+        if (memberId !== userId) {
+          io.to(`user:${memberId}`).emit('typing:started', { chatId, userId });
+        }
+      });
+    } else {
+      const [id1, id2] = chatId.split(':');
+      const otherId = id1 === userId ? id2 : id1;
+      io.to(`user:${otherId}`).emit('typing:started', { chatId, userId });
+    }
   });
 
   socket.on('typing:stop', ({ chatId, userId }) => {
-    const [id1, id2] = chatId.split(':');
-    const otherId = id1 === userId ? id2 : id1;
-    io.to(`user:${otherId}`).emit('typing:stopped', { chatId, userId });
+    const group = groups.get(chatId);
+    if (group) {
+      group.members.forEach(memberId => {
+        if (memberId !== userId) {
+          io.to(`user:${memberId}`).emit('typing:stopped', { chatId, userId });
+        }
+      });
+    } else {
+      const [id1, id2] = chatId.split(':');
+      const otherId = id1 === userId ? id2 : id1;
+      io.to(`user:${otherId}`).emit('typing:stopped', { chatId, userId });
+    }
   });
 
   socket.on('disconnect', () => {
