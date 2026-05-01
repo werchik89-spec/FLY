@@ -1,207 +1,248 @@
 import React, { useState } from 'react';
-import {
-  Search, Menu, Pin, VolumeX, MessageSquarePlus,
-} from 'lucide-react';
-import Avatar from './Avatar';
-import { formatChatTime, truncateText } from '../utils/helpers';
-import { Chat } from '../types';
-import ContextMenu from './ContextMenu';
+import type { Chat, User, FriendRequest } from '../types';
+import { formatTime } from '../utils/helpers';
 
 interface SidebarProps {
-  store: ReturnType<typeof import('../store/useStore').useStore>;
+  chats: Chat[];
+  activeChat: string | null;
+  onSelectChat: (chatId: string) => void;
+  onlineUsers: Set<string>;
+  currentUser: User;
+  friendRequests: FriendRequest[];
+  onAcceptRequest: (id: string) => void;
+  onRejectRequest: (id: string) => void;
+  onSearchUsers: (q: string) => Promise<User[]>;
+  onSendFriendRequest: (userId: string) => void;
+  onShowSettings: () => void;
+  onShowProfile: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ store }) => {
-  const [contextMenu, setContextMenu] = useState<{
-    x: number;
-    y: number;
-    chat: Chat;
-  } | null>(null);
+export default function Sidebar({
+  chats,
+  activeChat,
+  onSelectChat,
+  onlineUsers,
+  currentUser,
+  friendRequests,
+  onAcceptRequest,
+  onRejectRequest,
+  onSearchUsers,
+  onSendFriendRequest,
+  onShowSettings,
+  onShowProfile,
+}: SidebarProps) {
+  const [search, setSearch] = useState('');
+  const [tab, setTab] = useState<'chats' | 'requests' | 'search'>('chats');
+  const [searchResults, setSearchResults] = useState<User[]>([]);
+  const [sentRequests, setSentRequests] = useState<Set<string>>(new Set());
 
-  const handleContextMenu = (e: React.MouseEvent, chat: Chat) => {
-    e.preventDefault();
-    setContextMenu({ x: e.clientX, y: e.clientY, chat });
+  const handleSearch = async (q: string) => {
+    setSearch(q);
+    if (q.trim().length > 0) {
+      setTab('search');
+      const results = await onSearchUsers(q);
+      setSearchResults(results);
+    } else {
+      setTab('chats');
+      setSearchResults([]);
+    }
   };
 
-  const closeContextMenu = () => setContextMenu(null);
-
-  const getStatusForChat = (chat: Chat): boolean => {
-    if (chat.type !== 'private') return false;
-    const otherUserId = chat.members.find((id) => id !== 'me');
-    const user = store.users.find((u) => u.id === otherUserId);
-    return user?.status === 'online';
+  const handleAddFriend = (userId: string) => {
+    onSendFriendRequest(userId);
+    setSentRequests(prev => new Set(prev).add(userId));
   };
 
-  const getLastMessagePreview = (chat: Chat): React.ReactNode => {
-    if (!chat.lastMessage) return <span className="chat-preview">Нет сообщений</span>;
-    const msg = chat.lastMessage;
-    const isMe = msg.senderId === 'me';
-    const sender = isMe
-      ? null
-      : store.users.find((u) => u.id === msg.senderId);
+  const filteredChats = chats.filter(c =>
+    c.friend.displayName.toLowerCase().includes(search.toLowerCase()) ||
+    c.friend.username.toLowerCase().includes(search.toLowerCase())
+  );
 
-    return (
-      <span className="chat-preview">
-        {chat.type === 'group' && !isMe && sender && (
-          <span className="chat-sender">{sender.name.split(' ')[0]}: </span>
-        )}
-        {isMe && chat.type === 'group' && (
-          <span className="chat-sender">Вы: </span>
-        )}
-        {truncateText(msg.text, 40)}
-      </span>
-    );
+  const getInitials = (name: string) => {
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
   return (
     <div className="sidebar">
       <div className="sidebar-header">
-        <button
-          className="menu-btn"
-          onClick={() => store.setShowSettings(true)}
-          title="Меню"
-        >
-          <Menu size={22} />
-        </button>
-
-        <div className="search-bar">
-          <Search size={18} className="search-icon" />
-          <input
-            type="text"
-            placeholder="Поиск..."
-            value={store.searchQuery}
-            onChange={(e) => store.setSearchQuery(e.target.value)}
-          />
+        <h2>ZenvorMs</h2>
+        <div className="sidebar-actions">
+          <button className="icon-btn" onClick={onShowProfile} title="Профиль">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+          </button>
+          <button
+            className="icon-btn"
+            onClick={() => setTab(tab === 'requests' ? 'chats' : 'requests')}
+            title="Запросы в друзья"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <line x1="19" y1="8" x2="19" y2="14"/>
+              <line x1="22" y1="11" x2="16" y2="11"/>
+            </svg>
+            {friendRequests.length > 0 && <span className="badge" />}
+          </button>
+          <button className="icon-btn" onClick={onShowSettings} title="Настройки">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>
+            </svg>
+          </button>
         </div>
-
-        <button
-          className="menu-btn"
-          onClick={() => store.setShowNewChat(true)}
-          title="Новый чат"
-        >
-          <MessageSquarePlus size={22} />
-        </button>
       </div>
 
-      <div className="folder-tabs">
-        {store.folders.map((folder) => (
-          <button
-            key={folder.id}
-            className={`folder-tab ${store.activeFolder === folder.id ? 'active' : ''}`}
-            onClick={() => store.setActiveFolder(folder.id)}
-          >
-            {folder.icon} {folder.name}
-          </button>
-        ))}
+      <div className="search-container">
+        <input
+          className="search-input"
+          placeholder="Поиск пользователей..."
+          value={search}
+          onChange={e => handleSearch(e.target.value)}
+        />
+      </div>
+
+      <div className="sidebar-tabs">
+        <button
+          className={`sidebar-tab ${tab === 'chats' ? 'active' : ''}`}
+          onClick={() => { setTab('chats'); setSearch(''); setSearchResults([]); }}
+        >
+          Чаты
+        </button>
+        <button
+          className={`sidebar-tab ${tab === 'requests' ? 'active' : ''}`}
+          onClick={() => setTab('requests')}
+        >
+          Запросы {friendRequests.length > 0 && `(${friendRequests.length})`}
+        </button>
       </div>
 
       <div className="chat-list">
-        {store.chats.map((chat) => (
-          <div
-            key={chat.id}
-            className={`chat-item ${store.activeChatId === chat.id ? 'active' : ''}`}
-            onClick={() => {
-              store.setActiveChatId(chat.id);
-              store.markAsRead(chat.id);
-            }}
-            onContextMenu={(e) => handleContextMenu(e, chat)}
-          >
-            <Avatar
-              name={chat.name}
-              color={chat.avatar}
-              size={50}
-              online={getStatusForChat(chat)}
-            />
-
-            <div className="chat-info">
-              <div className="chat-info-top">
-                <span className="chat-name">{chat.name}</span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                  {chat.isPinned && (
-                    <Pin size={14} className="pin-icon" />
-                  )}
-                  <span className="chat-time">
-                    {chat.lastMessage
-                      ? formatChatTime(chat.lastMessage.timestamp)
-                      : ''}
-                  </span>
-                </div>
-              </div>
-              <div className="chat-info-bottom">
-                {getLastMessagePreview(chat)}
-                <div style={{ display: 'flex', alignItems: 'center' }}>
-                  {chat.isMuted && (
-                    <VolumeX size={14} className="pin-icon" style={{ marginRight: 4 }} />
-                  )}
-                  {chat.unreadCount > 0 && (
-                    <span
-                      className={`unread-badge ${chat.isMuted ? 'muted-badge' : ''}`}
-                    >
-                      {chat.unreadCount}
-                    </span>
-                  )}
-                </div>
-              </div>
+        {tab === 'chats' && (
+          filteredChats.length === 0 ? (
+            <div className="empty-state">
+              <p>Нет чатов</p>
+              <p style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>
+                Найдите друзей через поиск
+              </p>
             </div>
-          </div>
-        ))}
+          ) : (
+            filteredChats.map((chat, i) => (
+              <div
+                key={chat.id}
+                className={`chat-item ${activeChat === chat.id ? 'active' : ''}`}
+                onClick={() => onSelectChat(chat.id)}
+                style={{ animationDelay: `${i * 0.05}s` }}
+              >
+                <div className="chat-avatar">
+                  {chat.friend.avatar ? (
+                    <img src={chat.friend.avatar} alt="" />
+                  ) : (
+                    getInitials(chat.friend.displayName)
+                  )}
+                  {onlineUsers.has(chat.friend.id) && <div className="online-dot" />}
+                </div>
+                <div className="chat-info">
+                  <div className="chat-info-top">
+                    <span className="chat-name">{chat.friend.displayName}</span>
+                    {chat.lastMessage && (
+                      <span className="chat-time">
+                        {formatTime(chat.lastMessage.timestamp)}
+                      </span>
+                    )}
+                  </div>
+                  <div className="chat-preview">
+                    <span className="chat-last-msg">
+                      {chat.lastMessage
+                        ? (chat.lastMessage.senderId === currentUser.id ? 'Вы: ' : '') + chat.lastMessage.text
+                        : 'Начните общение'
+                      }
+                    </span>
+                    {chat.unreadCount > 0 && (
+                      <span className="chat-unread">{chat.unreadCount}</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))
+          )
+        )}
 
-        {store.chats.length === 0 && (
-          <div style={{
-            padding: 40,
-            textAlign: 'center',
-            color: 'var(--text-secondary)',
-          }}>
-            <p>Чатов не найдено</p>
-          </div>
+        {tab === 'requests' && (
+          friendRequests.length === 0 ? (
+            <div className="empty-state">
+              <p>Нет запросов</p>
+            </div>
+          ) : (
+            <div style={{ padding: '8px 16px' }}>
+              {friendRequests.map(req => (
+                <div key={req.id} className="friend-request-card">
+                  <div className="chat-avatar">
+                    {req.fromUser.avatar ? (
+                      <img src={req.fromUser.avatar} alt="" />
+                    ) : (
+                      getInitials(req.fromUser.displayName)
+                    )}
+                  </div>
+                  <div className="info">
+                    <div className="name">{req.fromUser.displayName}</div>
+                    <div className="username">@{req.fromUser.username}</div>
+                  </div>
+                  <div className="actions">
+                    <button className="btn-accept" onClick={() => onAcceptRequest(req.id)}>
+                      Принять
+                    </button>
+                    <button className="btn-reject" onClick={() => onRejectRequest(req.id)}>
+                      Отклонить
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
+        )}
+
+        {tab === 'search' && (
+          searchResults.length === 0 ? (
+            <div className="empty-state">
+              <p>Пользователи не найдены</p>
+            </div>
+          ) : (
+            <div style={{ padding: '4px 8px' }}>
+              {searchResults.map(user => (
+                <div key={user.id} className="user-search-result">
+                  <div className="chat-avatar">
+                    {user.avatar ? (
+                      <img src={user.avatar} alt="" />
+                    ) : (
+                      getInitials(user.displayName)
+                    )}
+                    {user.isOnline && <div className="online-dot" />}
+                  </div>
+                  <div className="user-info">
+                    <div className="user-name">{user.displayName}</div>
+                    <div className="user-username">@{user.username}</div>
+                  </div>
+                  {user.isFriend ? (
+                    <span className="btn-add-friend friend">Друг</span>
+                  ) : sentRequests.has(user.id) ? (
+                    <span className="btn-add-friend sent">Отправлено</span>
+                  ) : (
+                    <button
+                      className="btn-add-friend"
+                      onClick={() => handleAddFriend(user.id)}
+                    >
+                      Добавить
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )
         )}
       </div>
-
-      {contextMenu && (
-        <ContextMenu
-          x={contextMenu.x}
-          y={contextMenu.y}
-          onClose={closeContextMenu}
-          items={[
-            {
-              label: contextMenu.chat.isPinned ? 'Открепить' : 'Закрепить',
-              icon: '📌',
-              onClick: () => {
-                store.togglePinChat(contextMenu.chat.id);
-                closeContextMenu();
-              },
-            },
-            {
-              label: contextMenu.chat.isMuted ? 'Включить звук' : 'Без звука',
-              icon: contextMenu.chat.isMuted ? '🔔' : '🔕',
-              onClick: () => {
-                store.toggleMuteChat(contextMenu.chat.id);
-                closeContextMenu();
-              },
-            },
-            {
-              label: 'Архивировать',
-              icon: '📥',
-              onClick: () => {
-                store.archiveChat(contextMenu.chat.id);
-                closeContextMenu();
-              },
-            },
-            { separator: true },
-            {
-              label: 'Удалить чат',
-              icon: '🗑️',
-              danger: true,
-              onClick: () => {
-                store.deleteChat(contextMenu.chat.id);
-                closeContextMenu();
-              },
-            },
-          ]}
-        />
-      )}
     </div>
   );
-};
-
-export default Sidebar;
+}

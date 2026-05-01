@@ -16,7 +16,7 @@ function createWindow() {
       contextIsolation: true,
     },
     icon: path.join(__dirname, '../build/icon.png'),
-    title: 'Nexus Messenger',
+    title: 'ZenvorMs',
   });
 
   mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));

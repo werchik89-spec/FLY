@@ -1,19 +1,19 @@
 {
-  "name": "nexus-messenger",
-  "version": "1.0.0",
-  "description": "Nexus Messenger — современный мессенджер в стиле Telegram",
+  "name": "zenvor-ms",
+  "version": "2.0.0",
+  "description": "ZenvorMs — онлайн мессенджер с реальным общением",
   "main": "electron/main.js",
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently \"node server/index.js\" \"vite\"",
+    "dev:client": "vite",
+    "dev:server": "node server/index.js",
     "build": "vite build",
-    "electron:dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && cross-env NODE_ENV=development electron .\"",
     "electron:build": "npm run build && electron-builder --win --x64",
-    "electron:build:linux": "npm run build && electron-builder --linux --x64",
     "preview": "vite preview"
   },
   "build": {
-    "appId": "com.nexus.messenger",
-    "productName": "Nexus Messenger",
+    "appId": "com.zenvor.ms",
+    "productName": "ZenvorMs",
     "directories": {
       "output": "release",
       "buildResources": "build"
@@ -21,7 +21,14 @@
     "files": [
       "dist/**/*",
       "electron/**/*",
+      "server/**/*",
       "!electron/main.ts"
+    ],
+    "extraResources": [
+      {
+        "from": "server",
+        "to": "server"
+      }
     ],
     "win": {
       "target": [
@@ -31,40 +38,35 @@
         }
       ],
       "icon": "build/icon.ico",
-      "artifactName": "NexusMessenger-Setup-${version}.${ext}"
+      "artifactName": "ZenvorMs-Setup-${version}.${ext}"
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Nexus Messenger",
+      "shortcutName": "ZenvorMs",
       "installerIcon": "build/icon.ico",
       "uninstallerIcon": "build/icon.ico",
-      "installerSidebar": null,
-      "license": null,
       "perMachine": false,
       "allowElevation": true,
-      "runAfterFinish": true,
-      "deleteAppDataOnUninstall": false
+      "runAfterFinish": true
     },
     "linux": {
       "target": "AppImage",
       "icon": "build/icon.png"
     }
   },
-  "keywords": ["messenger", "telegram", "chat"],
-  "author": "Nexus Team",
+  "keywords": ["messenger", "chat", "zenvor"],
+  "author": "Zenvor",
   "license": "MIT",
   "dependencies": {
-    "@emoji-mart/data": "^1.2.1",
-    "@emoji-mart/react": "^1.1.1",
-    "date-fns": "^4.1.0",
-    "emoji-mart": "^5.6.0",
-    "lucide-react": "^0.468.0",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^6.28.1"
+    "socket.io": "^4.8.3",
+    "socket.io-client": "^4.8.3"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",

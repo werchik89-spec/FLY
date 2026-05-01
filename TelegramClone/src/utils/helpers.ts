@@ -1,53 +1,43 @@
-import { format, isToday, isYesterday, isThisWeek } from 'date-fns';
-import { ru } from 'date-fns/locale';
+export function formatTime(timestamp: string): string {
+  const date = new Date(timestamp);
+  const now = new Date();
+  const diff = now.getTime() - date.getTime();
+  const minutes = Math.floor(diff / 60000);
 
-export function formatChatTime(date: Date): string {
-  if (isToday(date)) {
-    return format(date, 'HH:mm');
+  if (minutes < 1) return 'сейчас';
+  if (minutes < 60) return `${minutes} мин`;
+
+  const hours = date.getHours().toString().padStart(2, '0');
+  const mins = date.getMinutes().toString().padStart(2, '0');
+
+  if (date.toDateString() === now.toDateString()) {
+    return `${hours}:${mins}`;
   }
-  if (isYesterday(date)) {
+
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (date.toDateString() === yesterday.toDateString()) {
+    return `вчера ${hours}:${mins}`;
+  }
+
+  return `${date.getDate().toString().padStart(2, '0')}.${(date.getMonth() + 1).toString().padStart(2, '0')} ${hours}:${mins}`;
+}
+
+export function formatDate(timestamp: string): string {
+  const date = new Date(timestamp);
+  const now = new Date();
+
+  if (date.toDateString() === now.toDateString()) {
+    return 'Сегодня';
+  }
+
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (date.toDateString() === yesterday.toDateString()) {
     return 'Вчера';
   }
-  if (isThisWeek(date)) {
-    return format(date, 'EEE', { locale: ru });
-  }
-  return format(date, 'dd.MM.yy');
-}
 
-export function formatMessageTime(date: Date): string {
-  return format(date, 'HH:mm');
-}
-
-export function formatDateSeparator(date: Date): string {
-  if (isToday(date)) return 'Сегодня';
-  if (isYesterday(date)) return 'Вчера';
-  return format(date, 'd MMMM yyyy', { locale: ru });
-}
-
-export function formatLastSeen(date: Date): string {
-  if (isToday(date)) {
-    return `был(а) в ${format(date, 'HH:mm')}`;
-  }
-  if (isYesterday(date)) {
-    return `был(а) вчера в ${format(date, 'HH:mm')}`;
-  }
-  return `был(а) ${format(date, 'd MMM', { locale: ru })}`;
-}
-
-export function getInitials(name: string): string {
-  return name
-    .split(' ')
-    .map((w) => w[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
-}
-
-export function truncateText(text: string, maxLen: number): string {
-  if (text.length <= maxLen) return text;
-  return text.slice(0, maxLen) + '...';
-}
-
-export function generateId(): string {
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
+    'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+  return `${date.getDate()} ${months[date.getMonth()]}`;
 }
