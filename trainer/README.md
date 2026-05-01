@@ -30,4 +30,4 @@ Copy-Item src\bin\Release\SchoolboyRunawayCheats.dll publish\
 2. Запусти `SchoolboyRunawayTrainer.exe` (Windows может спросить подтверждение — unsigned binary).
 3. Проверь, что путь к игре найден. Жми «Установить MelonLoader + мод».
 4. «Запустить через Steam». Через 1–3 минуты (первый запуск MelonLoader генерит proxy-ассембли) игра откроется.
-5. В игре нажми `Insert` — меню читов.
+5. В игре нажми `Insert` — меню читов. Хоткеи: `F1`–`F10`.
