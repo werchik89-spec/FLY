@@ -32,6 +32,20 @@ namespace SchoolboyRunawayCheats
                 if (Input.GetKeyDown(KeyCode.F4)) _state.Speedhack = !_state.Speedhack;
                 if (Input.GetKeyDown(KeyCode.F5)) Teleport.SavePosition();
                 if (Input.GetKeyDown(KeyCode.F6)) Teleport.LoadPosition();
+                if (Input.GetKeyDown(KeyCode.F7)) _state.GodMode = !_state.GodMode;
+                if (Input.GetKeyDown(KeyCode.F8))
+                {
+                    _state.FreezeNpcs = !_state.FreezeNpcs;
+                    if (_state.FreezeNpcs) FreezeNpcs.Enable();
+                    else FreezeNpcs.Disable();
+                }
+                if (Input.GetKeyDown(KeyCode.F9))
+                {
+                    _state.InvisibleMode = !_state.InvisibleMode;
+                    if (_state.InvisibleMode) Invisible.Enable();
+                    else Invisible.Disable();
+                }
+                if (Input.GetKeyDown(KeyCode.F10)) _state.SuperJump = !_state.SuperJump;
 
                 PlayerLocator.Refresh();
 
@@ -39,6 +53,10 @@ namespace SchoolboyRunawayCheats
                 if (_state.Noclip) Noclip.Tick(_state);
                 if (_state.Speedhack) Speedhack.Tick(_state);
                 if (_state.InfiniteStamina) InfiniteStamina.Tick();
+                if (_state.GodMode) GodMode.Tick();
+                if (_state.FreezeNpcs) FreezeNpcs.Tick();
+                if (_state.SuperJump) SuperJump.Tick(_state);
+                if (_state.Esp) Esp.Scan();
             }
             catch (System.Exception ex)
             {
@@ -49,6 +67,7 @@ namespace SchoolboyRunawayCheats
         public override void OnGUI()
         {
             if (_state.MenuOpen) _menu.Draw();
+            if (_state.Esp) Esp.DrawGUI();
         }
     }
 
@@ -59,9 +78,14 @@ namespace SchoolboyRunawayCheats
         public bool Noclip;
         public bool InfiniteStamina;
         public bool Speedhack;
+        public bool GodMode;
+        public bool Esp;
+        public bool FreezeNpcs;
+        public bool InvisibleMode;
+        public bool SuperJump;
         public float FlySpeed = 8f;
         public float NoclipSpeed = 8f;
         public float SpeedMultiplier = 2f;
-        public bool Esp;
+        public float JumpMultiplier = 3f;
     }
 }

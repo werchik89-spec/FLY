@@ -11,6 +11,11 @@ Mod для **Schoolboy Runaway** на Steam (Unity). Внутриигровое 
 | Speedhack | `F4` | Множитель `Time.timeScale` (slider в меню) |
 | Teleport save | `F5` | Запомнить текущую позицию |
 | Teleport load | `F6` | Телепорт на сохранённую позицию |
+| God Mode | `F7` | Бессмертие — постоянно восстанавливает HP/health до максимума |
+| Freeze NPCs | `F8` | Замораживает всех NPC/врагов (AI, NavMeshAgent, Animator) |
+| Invisible | `F9` | Невидимость — скрывает модель игрока и отключает detection у NPC |
+| Super Jump | `F10` | Увеличенный прыжок (множитель в меню, от 1x до 10x) |
+| ESP (wallhack) | тоггл в меню | Показывает NPC, предметы и двери сквозь стены с расстоянием |
 | Unlock all doors | кнопка в меню | Сбрасывает `isLocked` у всех сцена-объектов со словом `Door`/`Lock` в имени класса |
 | Collect all pickups | кнопка в меню | Вызывает `Pickup()/Collect()` на всех объектах со словом `Pickup`/`Gift` |
 
