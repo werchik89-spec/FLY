@@ -147,17 +147,16 @@ async function connect() {
     document.body.classList.add('connecting');
     document.body.classList.remove('connected');
     statusLabel.textContent = 'Connecting...';
-    statusDetail.textContent = `Establishing tunnel to ${state.selectedServer.city}`;
+    statusDetail.textContent = `Establishing tunnel to ${state.selectedServer.name}`;
     showToast('🔄', `Connecting to ${state.selectedServer.name}...`);
 
     try {
-        let result;
+        let result = null;
         if (window.vpnAPI) {
             result = await window.vpnAPI.connect(state.selectedServer);
+        } else {
+            await new Promise(resolve => setTimeout(resolve, 1500 + Math.random() * 1000));
         }
-
-        // Simulate a short connection delay for UX
-        await new Promise(resolve => setTimeout(resolve, 1500 + Math.random() * 1000));
 
         state.connecting = false;
         state.connected = true;
@@ -165,7 +164,19 @@ async function connect() {
         document.body.classList.add('connected');
 
         statusLabel.textContent = 'Connected';
-        statusDetail.textContent = `Secured via ${state.selectedServer.city}`;
+
+        if (result && result.realVPN) {
+            statusDetail.textContent = `VPN Tunnel active — ${state.selectedServer.name}`;
+            protocolValue.textContent = result.protocol || 'OpenVPN';
+            showToast('🛡️', `VPN tunnel established to ${state.selectedServer.name}`);
+        } else if (result && result.note) {
+            statusDetail.textContent = `DNS Protected — ${state.selectedServer.name}`;
+            protocolValue.textContent = result.protocol || 'DNS Protection';
+            showToast('🛡️', result.note);
+        } else {
+            statusDetail.textContent = `Secured via ${state.selectedServer.name}`;
+            showToast('🛡️', `Connected to ${state.selectedServer.name}`);
+        }
 
         if (result && result.ip) {
             ipValue.textContent = result.ip;
@@ -177,7 +188,6 @@ async function connect() {
         encryptionStatus.textContent = 'Active';
         privacyStatus.textContent = 'Protected';
 
-        showToast('🛡️', `Connected to ${state.selectedServer.name}`);
         startTimer();
         startSpeedSimulation();
         updateStats();
@@ -368,7 +378,7 @@ function renderServers(filter = '') {
             <div class="server-row ${isActive ? 'active' : ''}" data-id="${s.id}">
                 <span class="server-row-flag">${s.flag}</span>
                 <div class="server-row-info"><div class="server-row-name">${s.name}</div><div class="server-row-location">${s.city}</div></div>
-                <span class="server-row-ping">${s.ping} ms</span>
+                <span class="server-row-ping">${s.ping} ms${s.speed ? ' · ' + s.speed + ' Mbps' : ''}</span>
                 <div class="server-row-load"><div class="server-row-load-bar ${loadClass}" style="width: ${s.load}%"></div></div>
                 <button class="server-row-fav ${s.favorited ? 'favorited' : ''}" data-fav-id="${s.id}">
                     <svg viewBox="0 0 24 24" fill="${s.favorited ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>
