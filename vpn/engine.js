@@ -232,7 +232,7 @@ class VPNEngine {
     }
 
     /**
-     * Connect using OpenVPN binary
+     * Connect using OpenVPN binary with wintun driver
      */
     async _connectOpenVPN(serverConfig, openvpnPath) {
         return new Promise((resolve, reject) => {
@@ -244,21 +244,44 @@ class VPNEngine {
                 return reject(new Error('Invalid OpenVPN config'));
             }
 
+            // Copy wintun.dll next to openvpn.exe so it can find it
+            const openvpnDir = path.dirname(openvpnPath);
+            const wintunSrc = path.join(__dirname, 'bin', 'wintun.dll');
+            const wintunDest = path.join(openvpnDir, 'wintun.dll');
+            try {
+                if (fs.existsSync(wintunSrc) && !fs.existsSync(wintunDest)) {
+                    fs.copyFileSync(wintunSrc, wintunDest);
+                }
+            } catch (e) {
+                // wintun copy failed, OpenVPN may still work with TAP
+            }
+
+            // Modify config to use wintun if available
+            if (process.platform === 'win32' && !ovpnConfig.includes('windows-driver')) {
+                ovpnConfig += '\nwindows-driver wintun\n';
+            }
+
             // Write config to temp file
             const configPath = path.join(this.configDir, 'current.ovpn');
+            const logPath = path.join(this.configDir, 'openvpn.log');
             fs.writeFileSync(configPath, ovpnConfig);
 
             // Start OpenVPN process
-            const args = ['--config', configPath, '--auth-nocache'];
+            const args = [
+                '--config', configPath,
+                '--auth-nocache',
+                '--log', logPath,
+            ];
 
-            // On Windows, use --service to run silently
-            if (process.platform === 'win32') {
-                args.push('--service', 'xpro-vpn', '0');
-            }
+            const env = Object.assign({}, process.env);
+            // Add openvpn bin dir to PATH so it finds wintun.dll
+            env.PATH = openvpnDir + path.delimiter + (env.PATH || '');
 
             this.ovpnProcess = spawn(openvpnPath, args, {
                 stdio: ['pipe', 'pipe', 'pipe'],
                 detached: process.platform !== 'win32',
+                env: env,
+                cwd: openvpnDir,
             });
 
             let output = '';
@@ -267,26 +290,44 @@ class VPNEngine {
             const timeout = setTimeout(() => {
                 if (!resolved) {
                     resolved = true;
-                    // Even if we don't see "Initialization Sequence Completed",
-                    // the connection might still be establishing
-                    resolve({ partial: true });
+                    // Check log file for status
+                    try {
+                        const log = fs.readFileSync(logPath, 'utf8');
+                        if (log.includes('Initialization Sequence Completed')) {
+                            resolve({ partial: false });
+                        } else {
+                            resolve({ partial: true });
+                        }
+                    } catch (e) {
+                        resolve({ partial: true });
+                    }
                 }
-            }, 15000);
+            }, 20000);
 
             this.ovpnProcess.stdout.on('data', (data) => {
                 output += data.toString();
-                if (!resolved && output.includes('Initialization Sequence Completed')) {
-                    resolved = true;
-                    clearTimeout(timeout);
-                    resolve({ partial: false });
-                }
             });
 
             this.ovpnProcess.stderr.on('data', (data) => {
                 output += data.toString();
             });
 
+            // Also poll the log file for "Initialization Sequence Completed"
+            const logPoll = setInterval(() => {
+                if (resolved) { clearInterval(logPoll); return; }
+                try {
+                    const log = fs.readFileSync(logPath, 'utf8');
+                    if (log.includes('Initialization Sequence Completed')) {
+                        resolved = true;
+                        clearInterval(logPoll);
+                        clearTimeout(timeout);
+                        resolve({ partial: false });
+                    }
+                } catch (e) {}
+            }, 1000);
+
             this.ovpnProcess.on('error', (err) => {
+                clearInterval(logPoll);
                 if (!resolved) {
                     resolved = true;
                     clearTimeout(timeout);
@@ -295,11 +336,19 @@ class VPNEngine {
             });
 
             this.ovpnProcess.on('exit', (code) => {
+                clearInterval(logPoll);
                 if (!resolved) {
                     resolved = true;
                     clearTimeout(timeout);
                     if (code !== 0) {
-                        reject(new Error(`OpenVPN exited with code ${code}`));
+                        // Read log for error details
+                        let errorDetail = '';
+                        try {
+                            const log = fs.readFileSync(logPath, 'utf8');
+                            const lines = log.split('\n').filter(l => l.includes('ERROR') || l.includes('FATAL'));
+                            errorDetail = lines.slice(-3).join('; ');
+                        } catch (e) {}
+                        reject(new Error(`OpenVPN exited (code ${code}). ${errorDetail}`));
                     } else {
                         resolve({ partial: false });
                     }

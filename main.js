@@ -1,9 +1,38 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
+const { execSync } = require('child_process');
 const VPNEngine = require('./vpn/engine');
 
 let mainWindow;
 let vpnEngine;
+
+// ─── Auto-elevate to admin on Windows ───
+function requestAdminRelaunch() {
+    if (process.platform !== 'win32') return false;
+
+    try {
+        // Check if already running as admin
+        execSync('net session', { stdio: 'ignore', timeout: 3000 });
+        return false; // Already admin
+    } catch (e) {
+        // Not admin — relaunch elevated
+        const { shell } = require('electron');
+        const appPath = process.argv[0];
+        const args = process.argv.slice(1);
+
+        try {
+            execSync(`powershell -Command "Start-Process '${appPath}' -ArgumentList '${args.join(' ')}' -Verb RunAs"`, {
+                stdio: 'ignore',
+                timeout: 10000,
+            });
+            app.quit();
+            return true;
+        } catch (err) {
+            // User declined UAC — continue without admin (DNS-only mode)
+            return false;
+        }
+    }
+}
 
 function createWindow() {
     mainWindow = new BrowserWindow({
@@ -32,7 +61,12 @@ function createWindow() {
     });
 }
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+    // Try to elevate to admin for full VPN functionality
+    if (!requestAdminRelaunch()) {
+        createWindow();
+    }
+});
 
 app.on('window-all-closed', () => {
     if (vpnEngine) vpnEngine.disconnect();
