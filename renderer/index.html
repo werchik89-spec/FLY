@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>X Pro VPN</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Custom title bar -->
+    <div class="title-bar">
+        <div class="title-bar-drag">
+            <span class="title-bar-text">X Pro VPN</span>
+        </div>
+        <div class="title-bar-controls">
+            <button class="tb-btn minimize" id="tbMinimize">
+                <svg width="12" height="12" viewBox="0 0 12 12"><line x1="2" y1="6" x2="10" y2="6" stroke="currentColor" stroke-width="1.5"/></svg>
+            </button>
+            <button class="tb-btn maximize" id="tbMaximize">
+                <svg width="12" height="12" viewBox="0 0 12 12"><rect x="2" y="2" width="8" height="8" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+            </button>
+            <button class="tb-btn close" id="tbClose">
+                <svg width="12" height="12" viewBox="0 0 12 12"><line x1="2" y1="2" x2="10" y2="10" stroke="currentColor" stroke-width="1.5"/><line x1="10" y1="2" x2="2" y2="10" stroke="currentColor" stroke-width="1.5"/></svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Ambient background effects -->
+    <div class="ambient-bg">
+        <div class="grid-overlay"></div>
+        <div class="glow-orb orb-1"></div>
+        <div class="glow-orb orb-2"></div>
+        <div class="glow-orb orb-3"></div>
+        <div class="noise-overlay"></div>
+    </div>
+
+    <!-- App container -->
+    <div class="app">
+        <!-- Sidebar -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <svg viewBox="0 0 40 40" fill="none">
+                            <path d="M20 2L4 10v12c0 9.6 6.8 18.6 16 20.8 9.2-2.2 16-11.2 16-20.8V10L20 2z" stroke="currentColor" stroke-width="2.5" fill="none"/>
+                            <path d="M14 20l4 4 8-8" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <div class="logo-text">
+                        <span class="logo-name">X Pro</span>
+                        <span class="logo-tag">VPN</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-nav">
+                <button class="nav-item active" data-view="dashboard">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7" rx="1"/>
+                        <rect x="14" y="3" width="7" height="7" rx="1"/>
+                        <rect x="3" y="14" width="7" height="7" rx="1"/>
+                        <rect x="14" y="14" width="7" height="7" rx="1"/>
+                    </svg>
+                    <span>Dashboard</span>
+                </button>
+                <button class="nav-item" data-view="servers">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                    </svg>
+                    <span>Servers</span>
+                </button>
+                <button class="nav-item" data-view="stats">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/>
+                    </svg>
+                    <span>Statistics</span>
+                </button>
+                <button class="nav-item" data-view="settings">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+                    </svg>
+                    <span>Settings</span>
+                </button>
+            </div>
+
+            <div class="sidebar-footer">
+                <div class="premium-badge">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
+                    </svg>
+                    <span>Premium</span>
+                </div>
+                <div class="version">v2.1.0</div>
+            </div>
+        </nav>
+
+        <!-- Main content -->
+        <main class="main-content">
+            <!-- Dashboard View -->
+            <section class="view active" id="view-dashboard">
+                <div class="dashboard-grid">
+                    <!-- Connection Card -->
+                    <div class="card connection-card">
+                        <div class="connection-visual">
+                            <div class="orbit-ring ring-1"></div>
+                            <div class="orbit-ring ring-2"></div>
+                            <div class="orbit-ring ring-3"></div>
+                            <button class="connect-btn" id="connectBtn">
+                                <div class="btn-bg"></div>
+                                <svg class="power-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                                    <line x1="12" y1="2" x2="12" y2="12"/>
+                                    <path d="M16.24 7.76a6 6 0 0 1 .74 8.18A6 6 0 0 1 6 16a6 6 0 0 1 1.02-8.24"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="connection-info">
+                            <div class="status-label" id="statusLabel">Disconnected</div>
+                            <div class="status-detail" id="statusDetail">Tap to connect</div>
+                        </div>
+                        <div class="connection-timer" id="connectionTimer">00:00:00</div>
+                    </div>
+
+                    <!-- Server Info Card -->
+                    <div class="card server-info-card">
+                        <div class="card-header">
+                            <h3>Current Server</h3>
+                            <button class="change-btn" id="changeServerBtn">Change</button>
+                        </div>
+                        <div class="server-display">
+                            <div class="server-flag" id="currentFlag"></div>
+                            <div class="server-details">
+                                <div class="server-name" id="currentServerName">United States</div>
+                                <div class="server-city" id="currentServerCity">New York</div>
+                            </div>
+                            <div class="server-signal">
+                                <div class="signal-bar active"></div>
+                                <div class="signal-bar active"></div>
+                                <div class="signal-bar active"></div>
+                                <div class="signal-bar"></div>
+                            </div>
+                        </div>
+                        <div class="server-meta">
+                            <div class="meta-item">
+                                <span class="meta-label">Protocol</span>
+                                <span class="meta-value" id="protocolValue">WireGuard</span>
+                            </div>
+                            <div class="meta-item">
+                                <span class="meta-label">IP Address</span>
+                                <span class="meta-value" id="ipValue">—</span>
+                            </div>
+                            <div class="meta-item">
+                                <span class="meta-label">Encryption</span>
+                                <span class="meta-value">AES-256-GCM</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Speed Card -->
+                    <div class="card speed-card">
+                        <div class="card-header">
+                            <h3>Speed</h3>
+                            <span class="live-badge" id="liveBadge">● Live</span>
+                        </div>
+                        <div class="speed-display">
+                            <div class="speed-item download">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="7,10 12,15 17,10"/>
+                                    <line x1="12" y1="15" x2="12" y2="3"/>
+                                    <line x1="3" y1="21" x2="21" y2="21"/>
+                                </svg>
+                                <div class="speed-info">
+                                    <span class="speed-label">Download</span>
+                                    <span class="speed-value" id="downloadSpeed">0.00</span>
+                                    <span class="speed-unit">Mbps</span>
+                                </div>
+                            </div>
+                            <div class="speed-divider"></div>
+                            <div class="speed-item upload">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="17,14 12,9 7,14"/>
+                                    <line x1="12" y1="9" x2="12" y2="21"/>
+                                    <line x1="3" y1="3" x2="21" y2="3"/>
+                                </svg>
+                                <div class="speed-info">
+                                    <span class="speed-label">Upload</span>
+                                    <span class="speed-value" id="uploadSpeed">0.00</span>
+                                    <span class="speed-unit">Mbps</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="speed-graph">
+                            <canvas id="speedChart" height="100"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Quick Stats -->
+                    <div class="card quick-stats-card">
+                        <div class="card-header"><h3>Session</h3></div>
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <div class="stat-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                                </div>
+                                <div class="stat-info">
+                                    <span class="stat-value" id="dataUsed">0 MB</span>
+                                    <span class="stat-label">Data Used</span>
+                                </div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+                                </div>
+                                <div class="stat-info">
+                                    <span class="stat-value" id="pingValue">— ms</span>
+                                    <span class="stat-label">Ping</span>
+                                </div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a4 4 0 0 0-8 0v2"/></svg>
+                                </div>
+                                <div class="stat-info">
+                                    <span class="stat-value" id="encryptionStatus">Inactive</span>
+                                    <span class="stat-label">Encryption</span>
+                                </div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                </div>
+                                <div class="stat-info">
+                                    <span class="stat-value" id="privacyStatus">Exposed</span>
+                                    <span class="stat-label">Privacy</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Servers View -->
+            <section class="view" id="view-servers">
+                <div class="servers-container">
+                    <div class="servers-header">
+                        <h2>Server Locations</h2>
+                        <div class="search-box">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                            <input type="text" placeholder="Search servers..." id="serverSearch">
+                        </div>
+                    </div>
+                    <div class="server-categories">
+                        <button class="category-btn active" data-category="all">All</button>
+                        <button class="category-btn" data-category="recommended">Recommended</button>
+                        <button class="category-btn" data-category="recent">Recent</button>
+                        <button class="category-btn" data-category="favorites">Favorites</button>
+                    </div>
+                    <div class="server-list" id="serverList"></div>
+                </div>
+            </section>
+
+            <!-- Stats View -->
+            <section class="view" id="view-stats">
+                <div class="stats-container">
+                    <h2>Statistics</h2>
+                    <div class="stats-cards">
+                        <div class="card stat-detail-card"><h4>Total Data Transferred</h4><div class="big-stat" id="totalData">0 GB</div><div class="stat-sub">This month</div></div>
+                        <div class="card stat-detail-card"><h4>Total Time Connected</h4><div class="big-stat" id="totalTime">0h 0m</div><div class="stat-sub">This month</div></div>
+                        <div class="card stat-detail-card"><h4>Average Speed</h4><div class="big-stat" id="avgSpeed">0 Mbps</div><div class="stat-sub">Last 7 days</div></div>
+                        <div class="card stat-detail-card"><h4>Connections</h4><div class="big-stat" id="totalConnections">0</div><div class="stat-sub">This month</div></div>
+                    </div>
+                    <div class="card usage-chart-card">
+                        <h4>Weekly Usage</h4>
+                        <div class="bar-chart" id="weeklyChart">
+                            <div class="bar-item"><div class="bar" style="--height: 30%"><span>Mon</span></div></div>
+                            <div class="bar-item"><div class="bar" style="--height: 55%"><span>Tue</span></div></div>
+                            <div class="bar-item"><div class="bar" style="--height: 80%"><span>Wed</span></div></div>
+                            <div class="bar-item"><div class="bar" style="--height: 45%"><span>Thu</span></div></div>
+                            <div class="bar-item"><div class="bar" style="--height: 65%"><span>Fri</span></div></div>
+                            <div class="bar-item"><div class="bar" style="--height: 90%"><span>Sat</span></div></div>
+                            <div class="bar-item"><div class="bar" style="--height: 70%"><span>Sun</span></div></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Settings View -->
+            <section class="view" id="view-settings">
+                <div class="settings-container">
+                    <h2>Settings</h2>
+                    <div class="settings-groups">
+                        <div class="settings-group">
+                            <h4>Connection</h4>
+                            <div class="setting-item"><div class="setting-info"><span class="setting-name">Auto-connect</span><span class="setting-desc">Connect automatically on app launch</span></div><label class="toggle"><input type="checkbox" id="autoConnect"><span class="toggle-slider"></span></label></div>
+                            <div class="setting-item"><div class="setting-info"><span class="setting-name">Kill Switch</span><span class="setting-desc">Block internet if VPN disconnects</span></div><label class="toggle"><input type="checkbox" id="killSwitch" checked><span class="toggle-slider"></span></label></div>
+                            <div class="setting-item"><div class="setting-info"><span class="setting-name">DNS Leak Protection</span><span class="setting-desc">Prevent DNS queries outside tunnel</span></div><label class="toggle"><input type="checkbox" id="dnsProtection" checked><span class="toggle-slider"></span></label></div>
+                        </div>
+                        <div class="settings-group">
+                            <h4>Protocol</h4>
+                            <div class="setting-item"><div class="setting-info"><span class="setting-name">VPN Protocol</span><span class="setting-desc">Select tunneling protocol</span></div><select class="setting-select" id="protocolSelect"><option value="wireguard" selected>WireGuard</option><option value="openvpn">OpenVPN</option><option value="ikev2">IKEv2</option></select></div>
+                            <div class="setting-item"><div class="setting-info"><span class="setting-name">Split Tunneling</span><span class="setting-desc">Exclude specific apps from VPN</span></div><label class="toggle"><input type="checkbox" id="splitTunnel"><span class="toggle-slider"></span></label></div>
+                        </div>
+                        <div class="settings-group">
+                            <h4>Appearance</h4>
+                            <div class="setting-item"><div class="setting-info"><span class="setting-name">Theme</span><span class="setting-desc">Toggle dark/light mode</span></div>
+                                <button class="theme-toggle-btn" id="themeToggle">
+                                    <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+                                    <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                                </button>
+                            </div>
+                            <div class="setting-item"><div class="setting-info"><span class="setting-name">Notifications</span><span class="setting-desc">Show connection status alerts</span></div><label class="toggle"><input type="checkbox" id="notifications" checked><span class="toggle-slider"></span></label></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Toast notification -->
+    <div class="toast" id="toast">
+        <div class="toast-icon"></div>
+        <span class="toast-message"></span>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

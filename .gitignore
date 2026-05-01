@@ -1,0 +1,4 @@
+node_modules/
+dist/
+*.zip
+assets/create_icon.py

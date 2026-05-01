@@ -1,0 +1,50 @@
+{
+  "name": "x-pro-vpn",
+  "version": "2.1.0",
+  "description": "X Pro VPN — Premium VPN Client",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build:win": "electron-builder --win --x64",
+    "build:linux": "electron-builder --linux",
+    "build": "electron-builder --win --x64"
+  },
+  "author": "X Pro",
+  "license": "MIT",
+  "build": {
+    "appId": "com.xpro.vpn",
+    "productName": "X Pro VPN",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**/*",
+      "vpn/**/*",
+      "assets/**/*",
+      "node_modules/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "dir",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "assets/icon.png",
+      "signAndEditExecutable": false
+    },
+    "linux": {
+      "target": ["AppImage"],
+      "icon": "assets/icon.png"
+    }
+  },
+  "devDependencies": {
+    "electron": "^41.4.0",
+    "electron-builder": "^26.8.1"
+  },
+  "dependencies": {
+    "node-fetch": "^2.7.0"
+  }
+}
