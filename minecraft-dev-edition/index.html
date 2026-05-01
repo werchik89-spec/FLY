@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Minecraft Dev Edition</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- Main Menu -->
+    <div id="main-menu">
+        <div class="menu-container">
+            <h1 class="game-title">MINECRAFT<br><span class="dev-tag">DEV EDITION</span></h1>
+            <div class="menu-buttons">
+                <button id="btn-play" class="menu-btn">Play</button>
+                <button id="btn-creative" class="menu-btn">Creative Mode</button>
+                <button id="btn-settings" class="menu-btn secondary">Settings</button>
+            </div>
+            <p class="version-text">v0.1.0-dev</p>
+        </div>
+    </div>
+
+    <!-- Settings Panel -->
+    <div id="settings-panel" style="display:none;">
+        <div class="settings-container">
+            <h2>Settings</h2>
+            <div class="setting-row">
+                <label>Render Distance</label>
+                <input type="range" id="render-distance" min="2" max="8" value="4">
+                <span id="render-distance-val">4</span>
+            </div>
+            <div class="setting-row">
+                <label>Sensitivity</label>
+                <input type="range" id="sensitivity" min="1" max="10" value="5">
+                <span id="sensitivity-val">5</span>
+            </div>
+            <div class="setting-row">
+                <label>FOV</label>
+                <input type="range" id="fov-setting" min="50" max="110" value="75">
+                <span id="fov-val">75</span>
+            </div>
+            <div class="setting-row">
+                <label>Show FPS</label>
+                <input type="checkbox" id="show-fps" checked>
+            </div>
+            <button id="btn-settings-back" class="menu-btn">Back</button>
+        </div>
+    </div>
+
+    <!-- Game Canvas -->
+    <canvas id="game-canvas"></canvas>
+
+    <!-- HUD -->
+    <div id="hud" style="display:none;">
+        <!-- Crosshair -->
+        <div id="crosshair">+</div>
+
+        <!-- Debug Info (Dev Edition feature) -->
+        <div id="debug-info">
+            <div id="fps-counter">FPS: 0</div>
+            <div id="position-info">X: 0 Y: 0 Z: 0</div>
+            <div id="chunk-info">Chunk: 0, 0</div>
+            <div id="block-info">Looking at: none</div>
+            <div id="mode-info">Mode: Survival</div>
+        </div>
+
+        <!-- Hotbar -->
+        <div id="hotbar">
+            <div class="hotbar-slot selected" data-slot="0"></div>
+            <div class="hotbar-slot" data-slot="1"></div>
+            <div class="hotbar-slot" data-slot="2"></div>
+            <div class="hotbar-slot" data-slot="3"></div>
+            <div class="hotbar-slot" data-slot="4"></div>
+            <div class="hotbar-slot" data-slot="5"></div>
+            <div class="hotbar-slot" data-slot="6"></div>
+            <div class="hotbar-slot" data-slot="7"></div>
+            <div class="hotbar-slot" data-slot="8"></div>
+        </div>
+
+        <!-- Health and Hunger bars -->
+        <div id="status-bars">
+            <div id="health-bar">
+                <div class="bar-fill" id="health-fill"></div>
+                <span class="bar-label" id="health-label">20/20</span>
+            </div>
+            <div id="hunger-bar">
+                <div class="bar-fill" id="hunger-fill"></div>
+                <span class="bar-label" id="hunger-label">20/20</span>
+            </div>
+        </div>
+
+        <!-- Mobile Controls -->
+        <div id="mobile-controls">
+            <div id="joystick-area">
+                <div id="joystick-base">
+                    <div id="joystick-stick"></div>
+                </div>
+            </div>
+            <div id="action-buttons">
+                <button id="btn-jump" class="action-btn">Jump</button>
+                <button id="btn-fly" class="action-btn dev-btn">Fly</button>
+                <button id="btn-break" class="action-btn">Break</button>
+                <button id="btn-place" class="action-btn">Place</button>
+            </div>
+        </div>
+
+        <!-- Dev Tools Panel -->
+        <button id="btn-dev-tools" class="dev-toggle">DEV</button>
+        <div id="dev-panel" style="display:none;">
+            <h3>Dev Tools</h3>
+            <button class="dev-tool-btn" id="dev-time-day">Set Day</button>
+            <button class="dev-tool-btn" id="dev-time-night">Set Night</button>
+            <button class="dev-tool-btn" id="dev-tp-spawn">TP Spawn</button>
+            <button class="dev-tool-btn" id="dev-toggle-physics">Toggle Physics</button>
+            <button class="dev-tool-btn" id="dev-fill-inv">Fill Inventory</button>
+            <button class="dev-tool-btn" id="dev-clear-area">Clear Area</button>
+            <button class="dev-tool-btn" id="dev-gen-structure">Gen Structure</button>
+            <button class="dev-tool-btn" id="dev-toggle-wireframe">Wireframe</button>
+            <button class="dev-tool-btn" id="dev-chunk-borders">Chunk Borders</button>
+        </div>
+
+        <!-- Inventory (full) -->
+        <div id="inventory-screen" style="display:none;">
+            <div class="inventory-container">
+                <h3>Inventory</h3>
+                <div id="inventory-grid"></div>
+                <button id="btn-close-inv" class="menu-btn">Close</button>
+            </div>
+        </div>
+
+        <!-- Chat / Command input (Dev Edition) -->
+        <div id="chat-area" style="display:none;">
+            <div id="chat-messages"></div>
+            <input type="text" id="chat-input" placeholder="/command or message...">
+        </div>
+
+        <!-- Pause Menu -->
+        <div id="pause-menu" style="display:none;">
+            <div class="pause-container">
+                <h2>Game Paused</h2>
+                <button id="btn-resume" class="menu-btn">Resume</button>
+                <button id="btn-inventory" class="menu-btn">Inventory</button>
+                <button id="btn-quit" class="menu-btn secondary">Quit to Menu</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Screen -->
+    <div id="loading-screen" style="display:none;">
+        <div class="loading-container">
+            <h2>Generating World...</h2>
+            <div class="progress-bar">
+                <div class="progress-fill" id="load-progress"></div>
+            </div>
+            <p id="load-status">Initializing...</p>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="js/noise.js"></script>
+    <script src="js/blocks.js"></script>
+    <script src="js/world.js"></script>
+    <script src="js/player.js"></script>
+    <script src="js/controls.js"></script>
+    <script src="js/inventory.js"></script>
+    <script src="js/hud.js"></script>
+    <script src="js/devtools.js"></script>
+    <script src="js/game.js"></script>
+</body>
+</html>

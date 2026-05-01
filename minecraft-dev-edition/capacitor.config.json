@@ -1,0 +1,13 @@
+{
+  "appId": "com.devedition.minecraft",
+  "appName": "Minecraft Dev Edition",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": true,
+    "backgroundColor": "#000000"
+  }
+}
