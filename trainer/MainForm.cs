@@ -41,7 +41,7 @@ public sealed class MainForm : Form
         };
         var sub = new Label
         {
-            Text = "1) Найди игру. 2) Установи MelonLoader + мод. 3) Запусти. В игре: Insert — меню, F1–F6 — хоткеи.",
+            Text = "1) Найди игру. 2) Установи MelonLoader + мод. 3) Запусти. В игре: Insert — меню, F1–F10 — хоткеи.",
             Location = new Point(12, 40),
             AutoSize = true,
             ForeColor = Color.DimGray,
